@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Random Clip Player</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        // Parse the URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const streamerName = urlParams.get('streamerName') || ""; // Default to empty string if not provided
+        const timeframe = urlParams.get('duration') || ""; // Default to empty string if not provided
+
+        const apiUrl = 'https://kick.com/api/v2/channels/' + streamerName + '/clips?cursor=0&sort=date&time=' + timeframe;
+        let clipsData;
+
+        function fetchClips() {
+            $.getJSON(apiUrl, function(data) {
+                if (data.clips && data.clips.length > 0) {
+                    clipsData = data.clips;
+                    playRandomClip();
+                } else {
+                    console.error('No clips found.');
+                }
+            }).fail(function() {
+                console.error('Error fetching clip data.');
+            });
+        }
+
+        function playRandomClip() {
+            const randomIndex = Math.floor(Math.random() * clipsData.length);
+            const clip = clipsData[randomIndex];
+            
+            if (clip && clip.clip_url) {
+                const videoPlayer = document.getElementById('clipPlayer');
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(clip.clip_url);
+                    hls.attachMedia(videoPlayer);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        videoPlayer.play();
+                    });
+                } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    videoPlayer.src = clip.clip_url;
+                    videoPlayer.play();
+                } else {
+                    console.error('HLS is not supported in this browser.');
+                }
+
+                videoPlayer.onended = function() {
+                    playRandomClip();
+                };
+            } else {
+                console.error('Invalid clip data.');
+            }
+        }
+
+        fetchClips();
+    });
+</script>
+</head>
+<body>
+    <video id="clipPlayer" width="100%" controls></video>
+</body>
+</html>
