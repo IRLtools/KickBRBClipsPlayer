@@ -58,7 +58,7 @@
             $('#generateBtn').click(function() {
                 var streamerName = $('#streamerName').val();
                 var timeframe = $('#timeframe').val();
-                var baseUrl = 'https://irlhosting.com/clips/kick?';
+                var baseUrl = 'https://irltools.github.io/KickBRBClipsPlayer/clips.html?';
                 var generatedUrl = baseUrl + 'streamerName=' + encodeURIComponent(streamerName) + '&timeframe=' + encodeURIComponent(timeframe);
 
                 $('#generatedUrl').text(generatedUrl);
