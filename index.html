@@ -59,7 +59,7 @@
                 var streamerName = $('#streamerName').val();
                 var timeframe = $('#timeframe').val();
                 var baseUrl = 'https://irltools.github.io/KickBRBClipsPlayer/clips.html?';
-                var generatedUrl = baseUrl + 'streamerName=' + encodeURIComponent(streamerName) + '&timeframe=' + encodeURIComponent(timeframe);
+                var generatedUrl = baseUrl + 'streamerName=' + encodeURIComponent(streamerName) + '&duration=' + encodeURIComponent(timeframe);
 
                 $('#generatedUrl').text(generatedUrl);
                 $('#outputSection').show();
