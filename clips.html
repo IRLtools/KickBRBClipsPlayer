@@ -3,62 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <title>Random Clip Player</title>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<script type="text/javascript">
-    $(document).ready(function() {
-        // Parse the URL query parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const streamerName = urlParams.get('streamerName') || ""; // Default to empty string if not provided
-        const timeframe = urlParams.get('duration') || ""; // Default to empty string if not provided
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const streamerName = urlParams.get('streamerName') || "";
+            const timeframe = urlParams.get('duration') || "";
+            const baseUrl = `https://kick.com/api/v2/channels/${streamerName}/clips?sort=date&time=${timeframe}`;
+            const maxPages = 5;
+            let allClips = [];
+            let cursor = '0';
+            let firstBatchLoaded = false;
 
-        const apiUrl = 'https://kick.com/api/v2/channels/' + streamerName + '/clips?cursor=0&sort=date&time=' + timeframe;
-        let clipsData;
-
-        function fetchClips() {
-            $.getJSON(apiUrl, function(data) {
-                if (data.clips && data.clips.length > 0) {
-                    clipsData = data.clips;
-                    playRandomClip();
-                } else {
-                    console.error('No clips found.');
-                }
-            }).fail(function() {
-                console.error('Error fetching clip data.');
-            });
-        }
-
-        function playRandomClip() {
-            const randomIndex = Math.floor(Math.random() * clipsData.length);
-            const clip = clipsData[randomIndex];
-            
-            if (clip && clip.clip_url) {
-                const videoPlayer = document.getElementById('clipPlayer');
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(clip.clip_url);
-                    hls.attachMedia(videoPlayer);
-                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                        videoPlayer.play();
-                    });
-                } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-                    videoPlayer.src = clip.clip_url;
-                    videoPlayer.play();
-                } else {
-                    console.error('HLS is not supported in this browser.');
+            function fetchClips(page) {
+                if (page > maxPages || !cursor) {
+                    console.log('No more pages to fetch or no cursor available.');
+                    if (!firstBatchLoaded && allClips.length > 0) {
+                        firstBatchLoaded = true;
+                        playRandomClip();
+                    }
+                    return;
                 }
 
-                videoPlayer.onended = function() {
-                    playRandomClip();
-                };
-            } else {
-                console.error('Invalid clip data.');
+                const apiUrl = `${baseUrl}&cursor=${cursor}`;
+                console.log(`Fetching page: ${page} from URL: ${apiUrl}`);
+
+                $.getJSON(apiUrl, function(data) {
+                    if (data.clips && data.clips.length > 0) {
+                        console.log(`Fetched ${data.clips.length} clips from page ${page}`);
+                        allClips = allClips.concat(data.clips);
+                        cursor = data.nextCursor || '';
+                        if (!firstBatchLoaded) {
+                            firstBatchLoaded = true;
+                            playRandomClip();
+                        }
+                        fetchClips(page + 1);
+                    } else {
+                        console.log('No clips found in current batch.');
+                        if (!firstBatchLoaded && allClips.length > 0) {
+                            firstBatchLoaded = true;
+                            playRandomClip();
+                        } else {
+                            console.error('No clips found.');
+                        }
+                    }
+                }).fail(function() {
+                    console.error('Error fetching clip data.');
+                });
             }
-        }
 
-        fetchClips();
-    });
-</script>
+            function playRandomClip() {
+                console.log('All clips data:', allClips);
+                if (allClips.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * allClips.length);
+                    const clip = allClips[randomIndex];
+                    console.log('Playing clip:', clip);
+
+                    if (clip && clip.clip_url) {
+                        const videoPlayer = document.getElementById('clipPlayer');
+                        if (Hls.isSupported()) {
+                            const hls = new Hls();
+                            hls.loadSource(clip.clip_url);
+                            hls.attachMedia(videoPlayer);
+                            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                                videoPlayer.play();
+                            });
+                        } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                            videoPlayer.src = clip.clip_url;
+                            videoPlayer.play();
+                        } else {
+                            console.error('HLS is not supported in this browser.');
+                        }
+
+                        videoPlayer.onended = function() {
+                            playRandomClip();
+                        };
+                    } else {
+                        console.error('Invalid clip data.');
+                    }
+                } else {
+                    console.error('No clips available to play.');
+                }
+            }
+
+            // Start fetching clips
+            fetchClips(1);
+        });
+    </script>
 </head>
 <body>
     <video id="clipPlayer" width="100%" controls></video>
