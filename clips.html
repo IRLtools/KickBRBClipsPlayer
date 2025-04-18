@@ -10,7 +10,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const streamerName = urlParams.get('streamerName') || "";
             const timeframe = urlParams.get('duration') || "";
-            const baseUrl = `https://kick.com/api/v2/channels/${streamerName}/clips?sort=date&time=${timeframe}`;
+            const baseUrl = `https://api.kichat.dev/api/v2/channels/${streamerName}/clips?sort=date&time=${timeframe}`;
             const maxPages = 5;
             let allClips = [];
             let cursor = '0';
